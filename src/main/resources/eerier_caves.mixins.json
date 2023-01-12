@@ -1,7 +1,7 @@
 {
   "required": true,
   "minVersion": "0.8",
-  "package": "binary404.eeriercaves.mixin",
+  "package": "binary404.eerier_caves.mixin",
   "compatibilityLevel": "JAVA_8",
   "refmap": "eeriercaves.refmap.json",
   "mixins": [
