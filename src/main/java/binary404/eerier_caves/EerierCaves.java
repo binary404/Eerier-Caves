@@ -2,7 +2,6 @@ package binary404.eerier_caves;
 
 import binary404.eerier_caves.common.worldgen.EerierCavesBiomes;
 import net.minecraftforge.eventbus.api.IEventBus;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.event.server.ServerStartingEvent;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;

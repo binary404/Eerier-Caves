@@ -1,7 +1,7 @@
 package binary404.eerier_caves.common.worldgen;
 
 import binary404.eerier_caves.EerierCaves;
-import net.minecraft.core.registries.Registries;
+import net.minecraft.core.Registry;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.biome.Biome;
@@ -24,7 +24,7 @@ public class EerierCavesBiomes {
     }
 
     private static ResourceKey<Biome> registerOverworld(String name) {
-        ResourceKey<Biome> key = ResourceKey.create(Registries.BIOME, new ResourceLocation(EerierCaves.MODID, name));
+        ResourceKey<Biome> key = ResourceKey.create(Registry.BIOME_REGISTRY, new ResourceLocation(EerierCaves.MODID, name));
         overworldBiomes.add(key);
         allBiomes.add(key);
         return key;
