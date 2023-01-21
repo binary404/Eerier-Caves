@@ -1,32 +1,42 @@
 buildscript {
     repositories {
+        maven { url = 'https://maven.minecraftforge.net' }
         maven { url = 'https://repo.spongepowered.org/repository/maven-public/' }
         mavenCentral()
+        jcenter()
+        maven { url = 'https://maven.parchmentmc.org' }
     }
     dependencies {
-        classpath 'org.spongepowered:mixingradle:0.7-SNAPSHOT'
+        classpath group: 'net.minecraftforge.gradle', name: 'ForgeGradle', version: "${forgegradle_version}", changing: false
+        classpath "org.spongepowered:mixingradle:${mixingradle_version}"
+        classpath "org.parchmentmc:librarian:${librarian_version}"
     }
 }
 
 plugins {
-    id 'net.minecraftforge.gradle' version '5.1.+'
-    id 'org.parchmentmc.librarian.forgegradle' version '1.+'
+    id 'com.matthewprenger.cursegradle' version "${cursegradle_version}"
 }
-
+apply plugin: 'net.minecraftforge.gradle'
+apply plugin: 'org.parchmentmc.librarian.forgegradle'
+apply plugin: 'maven-publish'
 apply plugin: 'org.spongepowered.mixin'
 
-group = 'binary404'
-version = '1.0.0'
+jarJar.enable()
 
-java {
-    archivesBaseName = 'eerier_caves'
-    toolchain.languageVersion = JavaLanguageVersion.of(17)
-}
+boolean dev = System.getenv('RELEASE') == null || System.getenv('RELEASE').equals('false');
+
+ext.buildNumber = System.getenv('BUILD_NUMBER')
+
+group = 'binary404'
+archivesBaseName = "eerier_caves-${artifact_minecraft_version}"
+version = mod_version + (dev && buildNumber != null ? "-${buildNumber}" : '')
+
+java.toolchain.languageVersion = JavaLanguageVersion.of(17)
 
 minecraft {
-    mappings channel: 'parchment', version: '1.19.3-2022.12.18-1.19.3'
+    mappings channel: 'parchment', version: "${minecraft_version}-${parchment_version}-${minecraft_version}"
 
-    // accessTransformer = file('src/main/resources/META-INF/accesstransformer.cfg')
+    accessTransformer = file('src/main/resources/META-INF/accesstransformer.cfg')
 
     runs {
         client {
@@ -119,16 +129,28 @@ mixin {
 sourceSets.main.resources { srcDir 'src/generated/resources' }
 
 repositories {
-
     flatDir {
         dir 'libs'
+    }
+    maven {
+        url 'https://www.cursemaven.com'
+        content {
+            includeGroup "curse.maven"
+        }
     }
 }
 
 dependencies {
-    minecraft 'net.minecraftforge:forge:1.19.3-44.1.5'
+    minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
 
-    implementation fg.deobf('com.github.glitchfiend:TerraBlender-forge:1.19.3-2.1.0.134')
+    implementation fg.deobf("com.github.glitchfiend:TerraBlender-forge:${terrablender_minecraft_version}-${terrablender_version}")
+
+    jarJar(group: 'binary404.fx_lib', name: 'fx_lib', version: '[1.19.3-2.0.0,)') {
+        jarJar.pin(it, project.fxlib_version)
+    }
+
+    compileOnly fg.deobf("binary404.fx_lib:fx_lib:${fxlib_version}")
+    runtimeOnly fg.deobf("binary404.fx_lib:fx_lib:${fxlib_version}")
 
     annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
 }
@@ -142,13 +164,60 @@ jar {
                 "Implementation-Title"    : project.name,
                 "Implementation-Version"  : project.jar.archiveVersion,
                 "Implementation-Vendor"   : "binary404",
-                "Implementation-Timestamp": new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")
+                "Implementation-Timestamp": new Date().format("yyyy-MM-dd'T'HH:mm:ssZ"),
+                'MixinConfigs': 'eerier_caves.mixins.json'
         ])
     }
 }
 
+task jarJarRelease {
+    doLast {
+        tasks.jarJar {
+            classifier = ''
+        }
+    }
+    finalizedBy tasks.jarJar
+}
+
+java {
+    withSourcesJar()
+    withJavadocJar()
+}
+
 jar.finalizedBy('reobfJar')
+tasks.jarJar.finalizedBy('reobfJarJar')
 
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8' // Use the UTF-8 charset for Java compilation
+}
+
+String getChangelogText() {
+    def changelogFile = file('changelog.txt')
+    String str = ''
+    int lineCount = 0
+    boolean done = false
+    changelogFile.eachLine {
+        if (done || it == null) {
+            return
+        }
+        if (it.size() > 1) {
+            def temp = it
+            if (lineCount == 0) {
+                temp = "Eerier Caves ${version}"
+                temp = "<span style=\"font-size: 18px; color: #333399;\">Eerier Caves v${mod_version}</span>&nbsp;&nbsp;<em>for Minecraft ${minecraft_version}</em><br/>"
+            } else if (it.startsWith('-')) {
+                temp = "&nbsp;&nbsp;&nbsp;$temp<br/>"
+                temp = temp.replaceAll("(\\S+\\/\\S+)#([0-9]+)\\b", "<a href=\"https://github.com/\$1/issues/\$2\">\$0</a>");
+                temp = temp.replaceAll("#([0-9]+)\\b(?!<\\/a>)", "<a href=\"https://github.com/$github_project/issues/\$1\">\$0</a>");
+            } else {
+                temp = "<h4>$temp</h4>"
+            }
+            str += temp
+            lineCount++
+        } else {
+            str += "<p>Please submit any Issues you come across on the&nbsp;<a href=\"https://github.com/${github_project}/issues\" rel=\"nofollow\">Issue Tracker</a>.</p>"
+            done = true
+        }
+    }
+    return str
 }

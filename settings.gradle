@@ -1,9 +1,1 @@
-pluginManagement {
-    repositories {
-        gradlePluginPortal()
-        maven { url = 'https://maven.minecraftforge.net/' }
-        maven { url = 'https://maven.parchmentmc.org'}
-    }
-}
-
-rootProject.name = 'eerier_caves'
+ rootProject.name = 'eerier_caves'
